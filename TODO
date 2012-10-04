@@ -1,0 +1,11 @@
+FAIT - conversion en  python le programme  https://github.com/damellis/gctrl
+FAIT - fonctions: 
+			home, retourne a la position x0 y0 z0
+			sethome, utilisation de la commande g92 pour definir un zero virtuel et g92.1 pour reinitialiser
+			pause, met en pause le streaming
+			reset, soft reset
+FAIT - vue 2D. affiche le tracé gcode en meme temps que le stream
+FAIT - fonction clear pour la vue 2D
+A FAIRE - affichage de la position en mode jog sur la vue 2D
+A FAIRE - commande G03, G02
+A FAIRE - parametre de configuration affichage 2D 

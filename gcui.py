@@ -12,9 +12,6 @@ Connec.port = portname
 Connec.baudrate = DEFAULT_BAUDRATE
 zoom = 2.0    # niveau de zoom
 _debug = 1     #active l'affichage des differentes variables
-size = 1     #taille du pinceau
-#matortue = turtle.getturtle()
-#ts = turtle.getscreen()
 
 
 coord = {
@@ -154,7 +151,6 @@ gcode = {
 
 def parse_xyz(s):
     g = s.split()
-    
     return(g)
 
 def setlabel():
@@ -299,8 +295,13 @@ def stream(data):
             data.close()
             break
         i = 0
-        while varpause:
-            i = i + 1
+        if varpause == True :
+            Connec.write('!')
+            while True:
+                if varpause == False :
+                    Connec.write('~')
+                    print('~')
+                    break
         l = line.strip() # Strip all EOL characters for consistency    
         ref = parse_xyz(l)
         thread.start_new_thread(gcode.get(ref[0],nullcomm),(ref[1:],))
