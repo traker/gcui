@@ -10,11 +10,17 @@ varpause = False
 Connec = serial.Serial()
 Connec.port = portname
 Connec.baudrate = DEFAULT_BAUDRATE
-zoom = 2.0    # niveau de zoom
+zoom = 5.0    # niveau de zoom
+mm = 5.03
 _debug = 1     #active l'affichage des differentes variables
+filegcode = ""
+loadingfile = False
 
+        
 
 coord = {
+    "tx": 135.0 * mm,
+    "ty": 75.0 * mm,
     "oldcol": "red",
     "oldx": 0.0,
     "oldy": 0.0,
@@ -32,9 +38,11 @@ def G0com(xyz):
         if f[0] == "Z":
             if float(f[1:]) <= 0: 
                 coord["col"] = "blue"
+                if loadingfile == True: coord["col"] = "green"
                 coord["oz"] = "down"
             else: 
                 coord["col"] = "red"
+                if loadingfile == True: coord["col"] = "yellow"
                 coord["oz"] = "up"
         if f[0] == "X":
             coord["ox"] = f[1:]
@@ -43,7 +51,7 @@ def G0com(xyz):
     x = float(coord["ox"])
     y = float(coord["oy"])
     if _debug :print 'x = {0},y = {1}, z = {2}, couleur = {3}, pos x actuel = {4}, pos y actuel = {5}'.format( x, y, coord["oz"], coord["col"], coord["oldx"],coord["oldy"], coord["oldcol"] )
-    vuegc.create_line(float(coord["oldx"])*zoom,float(coord["oldy"])*zoom, x*zoom, y*zoom,fill=coord["col"])
+    vuegc.create_line(float(coord["oldx"])*zoom,-float(coord["oldy"])*zoom, x*zoom, -y*zoom,fill=coord["col"])
     coord["oldcol"] = coord["col"]
     coord["oldx"] = coord["ox"]
     coord["oldy"] = coord["oy"]
@@ -58,9 +66,11 @@ def G1com(xyz):
         if f[0] == "Z":
             if float(f[1:]) <= 0: 
                 coord["col"] = "blue"
+                if loadingfile == True: coord["col"] = "green"
                 coord["oz"] = "down"
             else: 
                 coord["col"] = "red"
+                if loadingfile == True: coord["col"] = "yellow"
                 coord["oz"] = "up"
         if f[0] == "X":
             coord["ox"] = f[1:]
@@ -69,7 +79,7 @@ def G1com(xyz):
     x = float(coord["ox"])
     y = float(coord["oy"])
     if _debug :print 'x = {0},y = {1}, z = {2}, couleur = {3}, pos x actuel = {4}, pos y actuel = {5}'.format( x, y, coord["oz"], coord["col"], coord["oldx"],coord["oldy"], coord["oldcol"] )
-    vuegc.create_line(float(coord["oldx"])*zoom,float(coord["oldy"])*zoom, x*zoom, y*zoom,fill=coord["col"])
+    vuegc.create_line(float(coord["oldx"])*zoom,-float(coord["oldy"])*zoom, x*zoom, -y*zoom,fill=coord["col"])
     coord["oldcol"] = coord["col"]
     coord["oldx"] = coord["ox"]
     coord["oldy"] = coord["oy"]
@@ -82,9 +92,11 @@ def G3com(xyz):
         if f[0] == "Z":
             if float(f[1:]) <= 0: 
                 coord["col"] = "blue"
+                if loadingfile == True: coord["col"] = "green"
                 coord["oz"] = "down"
             else: 
                 coord["col"] = "red"
+                if loadingfile == True: coord["col"] = "yellow"
                 coord["oz"] = "up"
         if f[0] == "X":
             coord["ox"] = f[1:]
@@ -93,7 +105,7 @@ def G3com(xyz):
     x = float(coord["ox"])
     y = float(coord["oy"])
     if _debug :print 'x = {0},y = {1}, z = {2}, couleur = {3}, pos x actuel = {4}, pos y actuel = {5}'.format( x, y, coord["oz"], coord["col"], coord["oldx"],coord["oldy"], coord["oldcol"] )
-    vuegc.create_line(float(coord["oldx"])*zoom,float(coord["oldy"])*zoom, x*zoom, y*zoom,fill=coord["col"])
+    vuegc.create_line(float(coord["oldx"])*zoom,-float(coord["oldy"])*zoom, x*zoom, -y*zoom,fill=coord["col"])
     coord["oldcol"] = coord["col"]
     coord["oldx"] = coord["ox"]
     coord["oldy"] = coord["oy"]
@@ -217,7 +229,7 @@ def sethome(event):
             Connec.writelines("G92.1\n")
             Connec.flushInput()
             virtualhome = False
-            
+
 
 
 def pause(event):
@@ -235,11 +247,12 @@ def pause(event):
 
 def gcodestream(event):
     if streaming == False:
-        gcode = loadfile()
-        if gcode != None:
+        if filegcode == "":
+            loadfile()
+        if filegcode != "":
             global streaming
             streaming = True
-            thread.start_new_thread( stream, (gcode, ) )
+            thread.start_new_thread( stream, (filegcode, ) )
 
 
 def stops(event):
@@ -263,10 +276,21 @@ def handler():
         root.quit()
 
 def loadfile():
+    global filegcode, loadingfile
     vuegc.delete('all')
     file = tkFileDialog.askopenfile(parent=root,mode='rb',title='Choose a file',filetypes=[('numeric command', '*.nc'), ('gcode', '*.gc')])
     if file != None:
-        return file
+        filegcode = file.readlines()
+        loadingfile = True
+        for line in filegcode :
+            l = line.strip()
+            ref= parse_xyz(l)
+            gcode.get(ref[0],nullcomm)(ref[1:])
+        vuegc.create_line(coord["tx"]/2 - coord["tx"], 0,coord["tx"] / 2,0)
+        vuegc.create_line(0.0, coord["ty"] / 2, 0.0, coord["ty"] / 2 - coord["ty"])
+        file.close()
+        loadingfile = False
+
 
 def clear(event):
     if streaming == True: return
@@ -289,10 +313,9 @@ def stream(data):
     Connec.write("\r\n\r\n")
     time.sleep(2)
     Connec.flushInput()
-    f = data.readlines()
+    f = data
     for line in f :
         if streaming == False: 
-            data.close()
             break
         i = 0
         if varpause == True :
@@ -309,13 +332,11 @@ def stream(data):
         #thread.start_new_thread(dessine, ())
         lStatus.config(text=l)
         if l == "M30":
-            data.close()
             streaming = False
             break
         Connec.write(l + '\n') # Send g-code block to grbl
         grbl_out = Connec.readline() # Wait for grbl response with carriage return
         lStatus.config(text=l + ': ' + grbl_out.strip() + ' ' )
-    data.close()
     streaming = False
 
 
@@ -334,7 +355,8 @@ def status():
         
 
 root = Tk()
-root.resizable(width=False, height=False)
+root.minsize(600,600)
+#root.resizable(width=False, height=False)
 root.title('CncGui')
 
 lTitre=Label(root,text="INSTRUCTIONS", fg="red")
@@ -346,26 +368,36 @@ lStatus=Label(root,text="coordonnees", fg="dark green", bg="yellow")
 lJogSpeed=Label(root,text="current jog speed: " + str(speed) + " mm per step")
 lPortname=Label(root, text="current serial port: " + portname)
 
-vuegc = Canvas(root, width =600, height =600, bg ='white',scrollregion=(-600,-600,600,600), relief="raised")
+vuegc = Canvas(root, bg ='white',scrollregion=(coord["tx"]/2 - coord["tx"],coord["ty"]/2 - coord["ty"],coord["tx"]/2,coord["ty"]), relief="raised")
 hbar=Scrollbar(root,orient=HORIZONTAL)
 hbar.config(command=vuegc.xview)
 vbar=Scrollbar(root,orient=VERTICAL)
 vbar.config(command=vuegc.yview)
 vuegc.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-vuegc.create_rectangle((-598,-698,598,598),fill="white",outline="blue")
 
 
+menubar = Menu(root)
 
-lTitre.grid(row=0, columnspan=2)
-lCommandes.grid(row=1, column=0)
-lInstruc.grid(row=1, column=1)
-lStatus.grid(row=2, columnspan=2)
-lJogSpeed.grid(row=3, columnspan=2)
-lPortname.grid(row=4, columnspan=2)
-vuegc.grid(row=0, column=3, rowspan=4,columnspan=4)
-hbar.grid(row=4,column=3, columnspan=4, sticky=E+W)
+
+filemenu = Menu(menubar, tearoff=0)
+filemenu.add_command(label="Open", command=loadfile)
+filemenu.add_command(label="Save", command=handler)
+filemenu.add_separator()
+filemenu.add_command(label="Exit", command=root.quit)
+menubar.add_cascade(label="File", menu=filemenu)
+
+lTitre.grid(row=1, columnspan=2)
+lCommandes.grid(row=2, column=0)
+lInstruc.grid(row=2, column=1)
+lStatus.grid(row=3, columnspan=2)
+lJogSpeed.grid(row=4, columnspan=2)
+lPortname.grid(row=5, columnspan=2)
+vuegc.grid(row=0, column=3, rowspan=6,columnspan=4, sticky=E+W+S+N)
+hbar.grid(row=6,column=3, columnspan=4, sticky=E+W)
 vbar.grid(row=0,column=7, rowspan=4,sticky=N+S)
 
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(3, weight=1)
 
 root.bind_all('1',set_speed0)
 root.bind_all('2', set_speed1)
@@ -387,6 +419,7 @@ root.bind_all('<r>', resetg)
 root.bind_all('<x>', stops)
 root.bind_all('<c>', clear)
 root.protocol("WM_DELETE_WINDOW", handler)
+root.config(menu=menubar)
 
 def main():
     Connec.open()
