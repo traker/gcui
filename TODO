@@ -6,6 +6,6 @@ FAIT - fonctions:
 			reset, soft reset
 FAIT - vue 2D. affiche le tracé gcode en meme temps que le stream
 FAIT - fonction clear pour la vue 2D
-A FAIRE - affichage de la position en mode jog sur la vue 2D
+FAIT - affichage de la position en mode jog sur la vue 2D
 A FAIRE - commande G03, G02
 A FAIRE - parametre de configuration affichage 2D 
