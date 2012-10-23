@@ -15,25 +15,15 @@ Connec.port = portname
 Connec.baudrate = DEFAULT_BAUDRATE
 zoom = 5.0    # niveau de zoom
 mm = 5.03
-_debug = 1     #active l'affichage des differentes variables
+_debug = 0     #active l'affichage des differentes variables
 filegcode = ""
 loadingfile = False
-test = None
 
-vueAxe_X = None
-vueAxe_Y = None
-vueBroche = None
-table_XY = None
-text_X = None
-text_Y = None
 
 
 coord = {
     "tx": 135.0 * mm,
     "ty": 75.0 * mm,
-    "oldcol": "red",
-    "oldx": 0.0,
-    "oldy": 0.0,
     "col": "red",
     "ox" : 0.0,
     "oy" : 0.0,
@@ -46,11 +36,11 @@ def G0com(xyz):
     global coord
     for f in xyz:
         if f[0] == "Z":
-            if float(f[1:]) <= 0: 
+            if float(f[1:]) <= 0:
                 coord["col"] = "blue"
                 if loadingfile == True: coord["col"] = "green"
                 coord["oz"] = "down"
-            else: 
+            else:
                 coord["col"] = "red"
                 if loadingfile == True: coord["col"] = "yellow"
                 coord["oz"] = "up"
@@ -61,24 +51,26 @@ def G0com(xyz):
     x = float(coord["ox"])
     y = float(coord["oy"])
     if _debug :print 'x = {0},y = {1}, z = {2}, couleur = {3}, pos x actuel = {4}, pos y actuel = {5}'.format( x, y, coord["oz"], coord["col"], coord["oldx"],coord["oldy"], coord["oldcol"] )
-    vuegc.create_line(float(coord["oldx"])*zoom + zerox(),-float(coord["oldy"])*zoom + zeroy(), x*zoom + zerox(), -y*zoom +zeroy(),fill=coord["col"], tags="uno")
-    coord["oldcol"] = coord["col"]
-    coord["oldx"] = coord["ox"]
-    coord["oldy"] = coord["oy"]
+    vuegc.create_line(test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], x*mm + test.get_posZeroVirtuel()[0], -y*mm + test.get_posZeroVirtuel()[1],fill=coord["col"], tags="uno")
+    test.x_movetoa(float(y))
+    test.y_movetoa(float(x))
+    if coord["col"] == "blue" or coord["col"] == "red":
+        vuegc.coords(vueBroche, test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], float(vuegc.cget("width")) / 2, 0)
 
 
-    
-    
+
+
+
 
 def G1com(xyz):
     global coord
     for f in xyz:
         if f[0] == "Z":
-            if float(f[1:]) <= 0: 
+            if float(f[1:]) <= 0:
                 coord["col"] = "blue"
                 if loadingfile == True: coord["col"] = "green"
                 coord["oz"] = "down"
-            else: 
+            else:
                 coord["col"] = "red"
                 if loadingfile == True: coord["col"] = "yellow"
                 coord["oz"] = "up"
@@ -89,22 +81,24 @@ def G1com(xyz):
     x = float(coord["ox"])
     y = float(coord["oy"])
     if _debug :print 'x = {0},y = {1}, z = {2}, couleur = {3}, pos x actuel = {4}, pos y actuel = {5}'.format( x, y, coord["oz"], coord["col"], coord["oldx"],coord["oldy"], coord["oldcol"] )
-    vuegc.create_line(float(coord["oldx"])*zoom + zerox(),-float(coord["oldy"])*zoom + zeroy(), x*zoom + zerox(), -y*zoom +zeroy(),fill=coord["col"], tags="uno")
-    coord["oldcol"] = coord["col"]
-    coord["oldx"] = coord["ox"]
-    coord["oldy"] = coord["oy"]
+    vuegc.create_line(test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], x*mm + test.get_posZeroVirtuel()[0], -y*mm + test.get_posZeroVirtuel()[1],fill=coord["col"], tags="uno")
+    test.x_movetoa(float(y))
+    test.y_movetoa(float(x))
+    if coord["col"] == "blue" or coord["col"] == "red":
+        vuegc.coords(vueBroche, test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], float(vuegc.cget("width")) / 2, 0)
 
 
-        
+
+
 def G3com(xyz):
     global coord
     for f in xyz:
         if f[0] == "Z":
-            if float(f[1:]) <= 0: 
+            if float(f[1:]) <= 0:
                 coord["col"] = "blue"
                 if loadingfile == True: coord["col"] = "green"
                 coord["oz"] = "down"
-            else: 
+            else:
                 coord["col"] = "red"
                 if loadingfile == True: coord["col"] = "yellow"
                 coord["oz"] = "up"
@@ -115,10 +109,12 @@ def G3com(xyz):
     x = float(coord["ox"])
     y = float(coord["oy"])
     if _debug :print 'x = {0},y = {1}, z = {2}, couleur = {3}, pos x actuel = {4}, pos y actuel = {5}'.format( x, y, coord["oz"], coord["col"], coord["oldx"],coord["oldy"], coord["oldcol"] )
-    vuegc.create_line(float(coord["oldx"])*zoom + zerox(),-float(coord["oldy"])*zoom + zeroy(), x*zoom + zerox(), -y*zoom +zeroy(),fill=coord["col"], tags="uno")
-    coord["oldcol"] = coord["col"]
-    coord["oldx"] = coord["ox"]
-    coord["oldy"] = coord["oy"]
+    vuegc.create_line(test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], x*mm + test.get_posZeroVirtuel()[0], -y*mm + test.get_posZeroVirtuel()[1],fill=coord["col"], tags="uno")
+    test.x_movetoa(float(y))
+    test.y_movetoa(float(x))
+    if coord["col"] == "blue" or coord["col"] == "red":
+        vuegc.coords(vueBroche, test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], float(vuegc.cget("width")) / 2, 0)
+
 
 def nullcomm(xyz):
     #print "commande non prise en charge"
@@ -164,7 +160,7 @@ gcode = {
 #            "G91"    :"" ,            # Deplacements en coordonnees relatives (incrementales)
 #            "G92"    :"" ,            #
 #            "G93"    :"" ,            # Vitesse inverse du temps (vitesse/distance)
-#            "G94"    :"" ,            # Vitesse en unites par minute 
+#            "G94"    :"" ,            # Vitesse en unites par minute
 #            "G95"    :"" ,            # Vitesse en unites par tour
 #            "G96"    :"" ,            #
 #            "G97"    :"" ,            #
@@ -197,29 +193,29 @@ def set_speed2(event):
 def comup(event):
     if streaming == False:
         Connec.writelines("G91\nG21\nG00 X0.000 Y" + str(speed) + " Z0.000\n")
-        test.x_moveto(-speed)
+        test.x_movetor(-speed)
         Connec.flushInput()
         dessine()
-        
+
 
 def comdown(event):
     if streaming == False:
         Connec.writelines("G91\nG21\nG00 X0.000 Y-" + str(speed) + " Z0.000\n")
-        test.x_moveto(speed)
+        test.x_movetor(speed)
         Connec.flushInput()
         dessine()
 
 def coml(event):
     if streaming == False:
         Connec.writelines("G91\nG21\nG00 X-" + str(speed) + " Y0.000 Z0.000\n")
-        test.y_moveto(-speed)
+        test.y_movetor(-speed)
         Connec.flushInput()
         dessine()
 
 def comr(event):
     if streaming == False:
         Connec.writelines("G91\nG21\nG00 X" + str(speed) + " Y0.000 Z0.000\n")
-        test.y_moveto(speed)
+        test.y_movetor(speed)
         Connec.flushInput()
         dessine()
 
@@ -236,7 +232,7 @@ def comzdown(event):
 def gohome(event):
     if streaming == False:
         Connec.writelines("G90\nG21\nG00 Z2.000\nG00 X0.000 Y0.000\nG00 Z0.000\n")
-        Connec.flushInput()        
+        Connec.flushInput()
         test.gohome()
         dessine()
 
@@ -246,21 +242,23 @@ def sethome(event):
         if virtualhome == False:
             Connec.writelines("G92 X0.000 Y0.000 Z0.000\n")
             Connec.flushInput()
-            test.set_home(test.get_posBrocheMachine())
-            dessine()
+            test.set_home()
             virtualhome = True
+            dessine()
+            
         else:
+            virtualhome = False
             Connec.writelines("G92.1\n")
             Connec.flushInput()
             test.homeReset()
             dessine()
-            virtualhome = False
+            
 
 
 
 def pause(event):
     global varpause
-    if streaming == False: 
+    if streaming == False:
         varpause = False
         return
     if varpause == True:
@@ -306,21 +304,21 @@ def loadfile():
     file = tkFileDialog.askopenfile(parent=root,mode='rb',title='Choose a file',filetypes=[('numeric command', '*.nc'), ('gcode', '*.gc')])
     if file != None:
         filegcode = file.readlines()
-        loadingfile = True 
+        loadingfile = True
+        temp = [test.get_posBrocheMachine()[0], test.get_posBrocheMachine()[1], test.get_posBrocheMachine()[2]]
         dessine()
+        test.set_BrocheMachine(temp)
         file.close()
         loadingfile = False
 
 
 def clear(event):
-    if streaming == True: return
-    vuegc.delete('uno')
-    dessinetable()
+    if streaming == True:
+        vuegc.delete("uno")
 
 def cleari():
-    if streaming == True: return
     vuegc.delete("uno")
-    dessinetable()
+
 
 
 def middleaxe(taille):
@@ -339,30 +337,38 @@ def OnvuegcClick(event):
     global  virtualhome
     if streaming == False:
         virtualhome = True
-        test.set_home([event.x, event.y])
+        test.set_axe([event.x, event.y])
         Connec.writelines("G92 X"+str(test.afficheZeroVirtuel()[0] - test.afficheBrocheMachine()[0])+" Y"+str(test.afficheZeroVirtuel()[1] - test.afficheBrocheMachine()[1])+" Z0.000\n")
-        print "G92 X"+str(test.afficheZeroVirtuel()[0]) +" -"+str(test.afficheBrocheMachine()[0])+" Y"+str(test.afficheZeroVirtuel()[1])+" - "+str(test.afficheBrocheMachine()[1])+" Z0.000\n"
-        gohome(None)
+        #print "G92 X"+str(test.afficheZeroVirtuel()[0]) +" -"+str(test.afficheBrocheMachine()[0])+" Y"+str(test.afficheZeroVirtuel()[1])+" - "+str(test.afficheBrocheMachine()[1])+" Z0.000\n"
+        #gohome(None)
+        temp = [test.get_posBrocheMachine()[0], test.get_posBrocheMachine()[1], test.get_posBrocheMachine()[2]]
         dessine()
+        test.set_BrocheMachine(temp)
 
 
 def MousePos(event):
     vuegc.itemconfigure(text_X, text="X: "+str((event.x - test.get_posZeroVirtuel()[0]) / mm))
     vuegc.itemconfigure(text_Y, text="Y: "+str((test.get_posZeroVirtuel()[1] - event.y) / mm))
-    
+
 
 def dessinetable():
+    print "axe x:"+str(test.get_vue_axe0X())
+    print "axe z:"+str(test.get_vue_axe0Y())
+    print "pos broche:"+str(test.get_posBrocheMachine())
+    print "zero virtuel:"+str(test.get_posZeroVirtuel())
+    print "zero machine:"+str(test.get_zeroMachine())
     vuegc.coords(table_XY, test.get_table()[0],test.get_table()[1], test.get_table()[2], test.get_table()[3])
     vuegc.coords(vueAxe_X, test.get_vue_axe0X()[0], test.get_vue_axe0X()[1], test.get_vue_axe0X()[2], test.get_vue_axe0X()[3])
     vuegc.coords(vueAxe_Y, test.get_vue_axe0Y()[0], test.get_vue_axe0Y()[1], test.get_vue_axe0Y()[2], test.get_vue_axe0Y()[3])
     vuegc.coords(vueBroche, test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], float(vuegc.cget("width")) / 2, 0)
 
-    
+
 
 def dessine():
     global loadingfile
+    dessinetable()
     if filegcode != None :
-        loadingfile = True 
+        loadingfile = True
         cleari()
         for line in filegcode :
             l = line.strip()
@@ -378,7 +384,7 @@ def stream(data):
     Connec.flushInput()
     f = data
     for line in f :
-        if streaming == False: 
+        if streaming == False:
             break
         i = 0
         if varpause == True :
@@ -388,10 +394,10 @@ def stream(data):
                     Connec.write('~')
                     print('~')
                     break
-        l = line.strip() # Strip all EOL characters for consistency    
+        l = line.strip() # Strip all EOL characters for consistency
         ref = parse_xyz(l)
         thread.start_new_thread(gcode.get(ref[0],nullcomm),(ref[1:],))
-        lStatus.config(text=l)
+        #lStatus.config(text=l)
         if l == "M30":
             streaming = False
             break
@@ -411,7 +417,7 @@ def status():
             if "MPos" in grbl_out.strip():
                 lStatus.config(text=grbl_out.strip())
 
-        
+
 
 
 root = Tk()
@@ -437,7 +443,7 @@ vuegc.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
 var = [(float(middleaxe("x")) - (coord["tx"])/2),\
                                        (float(middleaxe("y")) - (coord["ty"]) / 2),\
                                        (float(middleaxe("x"))) + (coord["tx"]/2 ),\
-                                       (float(middleaxe("y"))) + ( coord["ty"] / 2 )]     
+                                       (float(middleaxe("y"))) + ( coord["ty"] / 2 )]
 
 test = fraiseuse(var,[vuegc.cget("height"), vuegc.cget("width")])
 table_XY = vuegc.create_rectangle(test.get_table(),fill = "gray")
@@ -446,7 +452,6 @@ vueAxe_Y = vuegc.create_line(test.get_vue_axe0Y())
 vueBroche = vuegc.create_line(test.get_posBrocheMachine()[0],test.get_posBrocheMachine()[1], float(vuegc.cget("width")) / 2, 0, fill="red")
 text_X = vuegc.create_text(int(vuegc.cget("width")) / 3, int(vuegc.cget("height")) - 20)
 text_Y = vuegc.create_text((int(vuegc.cget("width")) / 3)*2, int(vuegc.cget("height")) - 20)
-print float(vuegc.cget("width")) / 3
 
 menubar = Menu(root)
 
@@ -499,11 +504,6 @@ root.config(menu=menubar)
 def main():
     Connec.open()
     Connec.flushInput()
-    Connec.write('?') # Send g-code block to grbl
-    grbl_out = Connec.readline() # Wait for grbl response with carriage return
-    if "MPos" in grbl_out.strip():
-        print grbl_out.strip()
-        
     thread.start_new_thread( status,())
     root.mainloop()
 
