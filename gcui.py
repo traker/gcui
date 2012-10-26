@@ -1,19 +1,20 @@
 from Tkinter import *
-import serial, tkFileDialog, time, thread, tkMessageBox
+import ttk
+import serial, tkFileDialog, time, thread, tkMessageBox, os
+from serial.tools.list_ports_windows import *
 import sys
 sys.path.append('src/')
 from fraiseuse import fraiseuse
 
 DEFAULT_BAUDRATE = 9600
 speed = 0.10
-portname = "COM4"
 streaming = False
 virtualhome = False
 varpause = False
 Connec = serial.Serial()
-Connec.port = portname
+Connec.port = None
 Connec.baudrate = DEFAULT_BAUDRATE
-zoom = 5.0    # niveau de zoom
+zoom = 1    # niveau de zoom
 mm = 5.03
 _debug = 0     #active l'affichage des differentes variables
 filegcode = ""
@@ -352,11 +353,11 @@ def MousePos(event):
 
 
 def dessinetable():
-    print "axe x:"+str(test.get_vue_axe0X())
-    print "axe z:"+str(test.get_vue_axe0Y())
-    print "pos broche:"+str(test.get_posBrocheMachine())
-    print "zero virtuel:"+str(test.get_posZeroVirtuel())
-    print "zero machine:"+str(test.get_zeroMachine())
+    if _debug: print "axe x:"+str(test.get_vue_axe0X())
+    if _debug: print "axe z:"+str(test.get_vue_axe0Y())
+    if _debug: print "pos broche:"+str(test.get_posBrocheMachine())
+    if _debug: print "zero virtuel:"+str(test.get_posZeroVirtuel())
+    if _debug: print "zero machine:"+str(test.get_zeroMachine())
     vuegc.coords(table_XY, test.get_table()[0],test.get_table()[1], test.get_table()[2], test.get_table()[3])
     vuegc.coords(vueAxe_X, test.get_vue_axe0X()[0], test.get_vue_axe0X()[1], test.get_vue_axe0X()[2], test.get_vue_axe0X()[3])
     vuegc.coords(vueAxe_Y, test.get_vue_axe0Y()[0], test.get_vue_axe0Y()[1], test.get_vue_axe0Y()[2], test.get_vue_axe0Y()[3])
@@ -410,15 +411,49 @@ def stream(data):
 def status():
     while True:
         time.sleep(0.5)
-        if streaming == False:
+        if Connec.isOpen():
+            if streaming == False:            
+                Connec.flushInput()
+                Connec.write('?') # Send g-code block to grbl
+                grbl_out = Connec.readline() # Wait for grbl response with carriage return
+                if "MPos" in grbl_out.strip():
+                    lStatus.config(text=grbl_out.strip())
+
+def scan():
+   # scan for available ports. return a list of tuples (num, name)
+   available = []
+   for port, desc, hwid in sorted(comports()):
+        if "USB" in desc:
+            available.append(port)
+   return available
+
+
+
+    
+def serialConnec(event):
+    global Connec
+    if Connec.getPort() != None:
+        Connec.close()
+        if varcombo.get() !="": 
+            Connec.setPort(varcombo.get())
+            Connec.open()
             Connec.flushInput()
-            Connec.write('?') # Send g-code block to grbl
-            grbl_out = Connec.readline() # Wait for grbl response with carriage return
-            if "MPos" in grbl_out.strip():
-                lStatus.config(text=grbl_out.strip())
+            
+            if Connec.isOpen():
+                lStatusConnec.config(text="connected", fg="green")
+            else:
+                lStatusConnec.config(text="not connected", fg="red")
 
-
-
+    else:
+        if varcombo.get() !="": 
+            Connec.setPort(varcombo.get())
+            Connec.open()
+            Connec.flushInput()
+            if Connec.isOpen():
+                lStatusConnec.config(text="connected", fg="green")
+            else:
+                lStatusConnec.config(text="not connected", fg="red")
+    
 
 root = Tk()
 root.resizable(width=False, height=False)
@@ -431,7 +466,7 @@ lInstruc=Label(root,text="set speed to 0.01 mm  per jog\nset speed to 0.10 mm pe
 
 lStatus=Label(root,text="coordonnees", fg="dark green", bg="yellow")
 lJogSpeed=Label(root,text="current jog speed: " + str(speed) + " mm per step")
-lPortname=Label(root, text="current serial port: " + portname)
+lPortname=Label(root, text="")
 
 vuegc = Canvas(root, bg ='white', relief="raised",height=int(coord["ty"])+200,width=int(coord["tx"])+100)
 hbar=Scrollbar(root,orient=HORIZONTAL)
@@ -457,10 +492,18 @@ menubar = Menu(root)
 
 filemenu = Menu(menubar, tearoff=0)
 filemenu.add_command(label="Open", command=loadfile)
-filemenu.add_command(label="Save", command=handler)
 filemenu.add_separator()
-filemenu.add_command(label="Exit", command=root.quit)
+filemenu.add_command(label="Exit", command=handler)
 menubar.add_cascade(label="File", menu=filemenu)
+
+CadreBar=Frame(root)
+
+varcombo = StringVar()
+
+barconf = ttk.Combobox(CadreBar, state='readonly', textvariable=varcombo)
+
+barconf["value"] = scan()
+lStatusConnec = Label(CadreBar, text ="Not Connected", fg="red")
 
 lTitre.grid(row=1, columnspan=2)
 lCommandes.grid(row=2, column=0)
@@ -471,6 +514,11 @@ lPortname.grid(row=5, columnspan=2)
 vuegc.grid(row=0, column=3, rowspan=6,columnspan=4, sticky=E+W+S+N)
 hbar.grid(row=6,column=3, columnspan=4, sticky=E+W)
 vbar.grid(row=0,column=7, rowspan=4,sticky=N+S)
+CadreBar.grid(row = 7, columnspan = 4)
+barconf.pack(side = LEFT)
+lStatusConnec.pack(side = LEFT)
+
+
 
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(3, weight=1)
@@ -499,13 +547,14 @@ root.protocol("WM_DELETE_WINDOW", handler)
 vuegc.bind('<Motion>', MousePos)
 vuegc.bind('<Button-1>',OnvuegcClick)
 
+barconf.bind('<<ComboboxSelected>>', serialConnec)
+
 root.config(menu=menubar)
 
 def main():
-    Connec.open()
-    Connec.flushInput()
     thread.start_new_thread( status,())
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
