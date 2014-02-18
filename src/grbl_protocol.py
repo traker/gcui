@@ -1,5 +1,13 @@
+'''
+Created on 15 fevr. 2014
+
+@author: guill
+
+'''
+
 import time, thread, serial, collections, grbl_tools
 from serial.tools.list_ports_windows import *
+from Tkinter import StringVar
 
 class comm:
     def __init__( self ):
@@ -9,11 +17,12 @@ class comm:
         self.Connec.baudrate = self.DEFAULT_BAUDRATE
 
     def scan( self ):
-       available = []
-       for port, desc, hwid in sorted( comports() ):
+        available = []
+        for port, desc, hwid in sorted( comports() ):
             if "USB" in desc:
                 available.append( port )
-       return available
+        available.append( "Deconnexion" )
+        return available
 
     def isOpen( self ):
        return self.Connec.isOpen()
@@ -40,26 +49,72 @@ class comm:
         grbl_out = self.Connec.readline()
         return grbl_out
 
+class status_coord:
+    def __init__( self ):
+        # mc = coordonnee de la machine
+        # tc = coordonnee de travail
+        self.mc_x = StringVar()
+        self.mc_y = StringVar()
+        self.mc_z = StringVar()
+        self.tc_x = StringVar()
+        self.tc_y = StringVar()
+        self.tc_z = StringVar()
+        self.status_travail = StringVar()
+
+
+    def set( self, message ):
+        temp = message.strip()[1:][:-1].split( ',' )
+        self.mc_x.set( temp[1][5:] )
+        self.mc_y.set( temp[2] )
+        self.mc_z.set( temp[3] )
+        self.tc_x.set( temp[4][5:] )
+        self.tc_y.set( temp[5] )
+        self.tc_z.set( temp[6] )
+        self.status_travail.set( temp[0] )
+
+
 class grbl_protocol():
     def __init__( self ):
         self.pile = collections.deque()
+        self.grbl_stat_template = collections.namedtuple( 'grbl_stat', ['motion', 'activ_work_coord_sys', 'plan', 'metric', 'absolut', 'feedrate_mode', 'prrogram_flow', 'spindle_stat', 'coolant_stat', 'ntool', 'feedrate'] )
+        self.grbl_stat = ""
         self.liaison_active = False
         self.serie = comm()
         self.liste_attente = collections.deque()
         self.reponse = ( 'ok', 'error: Bad number format', 'error: Unsupported statement', "error: Invalid statement", 'error: Modal group violation', 'error: Expected command letter' )
+        self.reponse_event = {'ok' : self.liste_attente.popleft,
+                              'error: Bad number format': self.liste_attente.popleft,
+                              'error: Unsupported statement': self.liste_attente.popleft,
+                              'error: Invalid statement': self.liste_attente.popleft,
+                              'error: Modal group violation': self.liste_attente.popleft,
+                              'error: Expected command letter': self.liste_attente.popleft,
+                              'grbl_stat': self.status_commandes,
+                              'grbl_coord': self.status_coord
+                              }
+        self.stat_coord = status_coord()
         #self.status = ""
         self.pause = False
         self.streaming = False
-        self.dispo = True
 
-    def start_liaison( self , status ):
+    def status_coord( self, coord ):
+        pass
+
+    def status_commandes( self, grbl_stat ):
+        tmp = grbl_stat.strip()[1:][:-1].split( ' ' )
+        self.grbl_stat = self.grbl_stat_template( *tmp )
+        return self.grbl_stat.motion
+
+    def start_liaison( self , affiche_texte ):
         self.liaison_active = True
         thread.start_new_thread( self.liaison_alle, () )
-        thread.start_new_thread( self.liaison_retour, ( status, ) )
+        thread.start_new_thread( self.liaison_retour, ( affiche_texte , ) )
 
     def stop_liaison( self ):
         self.liaison_active = False
-        self.serie.Connec.close()
+        time.sleep( 0.2 )
+        if self.serie.isOpen():
+            self.serie.Connec.flushInput()
+            self.serie.Connec.close()
 
     def add_commande( self, commande ):
         temp = filter( None, commande.split( "\n" ) )
@@ -76,20 +131,25 @@ class grbl_protocol():
                         self.liste_attente.append( commande_courante )
                 else:
                     time.sleep( 0.3 )
-                    if self.dispo:
-                        self.serie.envoyer( '?' )
+                    self.serie.envoyer( '?' )
+                    if self.streaming == False:
+                        self.serie.envoyer( '$G\n' )
 
-    def liaison_retour( self, status ):
+    def liaison_retour( self, affiche ):
         while self.liaison_active == True:
             if self.serie.isOpen():
                 temp = self.serie.recevoir()
-                if temp.strip() in self.reponse and self.streaming:
-                    tmp = self.liste_attente.popleft()
-                    print tmp + " " + temp
-                else:
-                    if temp.strip() not in self.reponse:
-                        #elf.status = temp
-                        status.set( temp.strip() )
+                if temp.strip() in self.reponse_event and self.streaming:
+                    print temp.strip() + "\n"
+                    tmp = self.reponse_event.get( temp.strip() )()
+                    affiche( tmp + " " + temp )
+                elif temp.strip().startswith( '[G' ):
+                    self.reponse_event.get( 'grbl_stat' )( temp )
+                elif temp.strip().startswith( '<' ):
+                    self.reponse_event.get( 'grbl_coord' )( temp )
+                    self.stat_coord.set( temp.strip() )
+
+
             else:
                 time.sleep( 1 )
 
@@ -98,6 +158,5 @@ if __name__ == "__main__":
     test = grbl_protocol()
     test.start_liaison()
     test.serie.set_port( 'com5' )
-    test.add_commande( "G91\nG21\nG00 Y 1\n~\n~" )
     time.sleep( 5 )
     test.stop_liaison()
