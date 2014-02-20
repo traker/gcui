@@ -92,7 +92,6 @@ class grbl_protocol():
                               'grbl_coord': self.status_coord
                               }
         self.stat_coord = status_coord()
-        #self.status = ""
         self.pause = False
         self.streaming = False
 
@@ -135,6 +134,7 @@ class grbl_protocol():
                     if self.streaming == False:
                         self.serie.envoyer( '$G\n' )
 
+
     def liaison_retour( self, affiche ):
         while self.liaison_active == True:
             if self.serie.isOpen():
@@ -145,6 +145,7 @@ class grbl_protocol():
                     affiche( tmp + " " + temp )
                 elif temp.strip().startswith( '[G' ):
                     self.reponse_event.get( 'grbl_stat' )( temp )
+                    vo = self.serie.recevoir()
                 elif temp.strip().startswith( '<' ):
                     self.reponse_event.get( 'grbl_coord' )( temp )
                     self.stat_coord.set( temp.strip() )

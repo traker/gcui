@@ -12,11 +12,6 @@ class ui:
         root.title( 'CncGui' )
         self.stat = self.protocole.stat_coord
 
-
-        #self.lTitre = Label( root, text="INSTRUCTIONS", fg="red" )
-        #self.lCommandes = Label( root, text="1: \n2: \n3: \n\narrow keys: \npage up & page down: \n\nh: \nt: \nr: \ng: \np: \nx: \ns: ", justify=RIGHT, fg="red" )
-        #self.lInstruc = Label( root, text="set speed to 0.01 mm  per jog\nset speed to 0.10 mm per jog\nset speed to 1.00 mm per jog\n\njog in x-y plane\njog in z axis\n\ngo home\nset virtual home/disable\nreset grbl\nstream un     fichier g-code\nmet en pause le stream\nstop streaming g-code (this is NOT immediate)\nstatus de la machine", justify=LEFT )
-
         #=======================================================================
         # config menu
         #=======================================================================
@@ -45,7 +40,6 @@ class ui:
         self.barconf.pack( side=LEFT )
         self.lStatusConnec.pack( side=LEFT )
 
-        #self.cadreCom = Frame( root )
         #=======================================================================
         # frame text output
         #=======================================================================
@@ -55,7 +49,6 @@ class ui:
         self.tAffiche = Text( self.cadreAffich, yscrollcommand=self.scrollAffiche.set )
         self.tAffiche.insert( INSERT, "cncgui v0.2 \n" )
         self.tAffiche.config( state=DISABLED )
-        #self.tAffiche.pack( side=BOTTOM, fill=BOTH )
         self.tAffiche.pack( side=LEFT, expand=1, fill=BOTH )
         self.scrollAffiche.pack( side=RIGHT, fill=Y )
         self.scrollAffiche.config( command=self.tAffiche.yview )
@@ -65,7 +58,6 @@ class ui:
         #=======================================================================
         # frame status
         #=======================================================================
-        #self.statAffich = Frame( root )
 
         self.lMC_lx = Label( self.root, text="X:", relief=RIDGE )
 
@@ -91,9 +83,8 @@ class ui:
         self.lTravailCoord = Label( root, text="Position Travail", font=( "Purisa", 28 ), fg="steel blue", relief=RIDGE )
 
         self.lTravailStatus = Label( root, textvariable=self.stat.status_travail, font=( "Purisa", 28 ), fg="gray", relief=RIDGE )
-        #self.lStatus = Label( root, text="self.status_text", fg="dark green", bg="yellow" )
+
         self.lJogSpeed = Label( root, text="current jog speed: " + str( self.speed ) + " mm per step" )
-        #self.lPortname = Label( root, text="" )
 
 
         #=======================================================================
@@ -119,18 +110,11 @@ class ui:
 
         self.lTravailStatus.grid( row=4, column=0, columnspan=4, sticky=W + E + N + S )
 
-
-        #self.lMachineCoord.grid( row=0, column=0, columnspan=2 )
-        #self.lTravailCoord.grid( row=0, column=2, columnspan=2 )
-        #self.statAffich.grid( row=0, columnspan=4, sticky=N )
         self.lJogSpeed.grid( row=5, columnspan=4, sticky=S + N )
         self.cadreAffich.grid( row=6, columnspan=4, sticky=W + E + N + S )
         self.CadreBar.grid( row=7, columnspan=4, sticky=S )
 
 
-
-
-        #self.lStatus.focus_set()
 
         root.grid_rowconfigure( 6, weight=100 )
         root.grid_columnconfigure( 0, weight=1 )
